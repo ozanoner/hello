@@ -1,12 +1,14 @@
-name: Build
+name: ESP32 Build and Flash
 
 on:
   push:
     branches: [ master ]
+  pull_request:
+    branches: [ master ]
 
 jobs:
   build:
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: ubuntu-latest
     
     steps:
     - uses: actions/checkout@v4
@@ -14,8 +16,42 @@ jobs:
     - name: Build ESP32 project
       uses: espressif/esp-idf-ci-action@v1
       with:
-        esp_idf_version: v5.3
+        esp_idf_version: v5.5
         target: esp32
         path: 'hello'
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: esp32-firmware
+        path: |
+          hello/build/bootloader/bootloader.bin
+          hello/build/partition_table/partition-table.bin
+          hello/build/hello.bin
+          hello/build/flash_args
 
+  flash:
+    needs: build
+    runs-on: self-hosted
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: esp32-firmware
+        path: ./firmware
+    
+    - name: Flash firmware to ESP32
+      run: |
+        cd firmware
+        esptool --chip esp32 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args" 2>&1 | tee flash_log.txt
+    
+    - name: Upload flash logs
+      uses: actions/upload-artifact@v4
+      with:
+        name: esp32-flash-logs
+        path: firmware/flash_log.txt
 
