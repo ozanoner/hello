@@ -48,7 +48,7 @@ jobs:
       run: |
         cd firmware
         sleep 3
-        timeout 10s python3 -m esp_idf_monitor > monitor_log.txt 2>&1
+        timeout 10s python3 -m esp_idf_monitor < /dev/null > monitor_log.txt 2>&1
     
     - name: Upload logs
       uses: actions/upload-artifact@v4
