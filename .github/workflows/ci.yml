@@ -50,11 +50,11 @@ jobs:
         cd firmware
         esptool --chip ${{ matrix.target }} -b 460800 --before default_reset --after hard_reset write_flash "@flash_args" > ../${{ matrix.target }}_flash_log.txt 2>&1
 
-    # - name: Monitor ESP32 serial output
-    #   run: |
-    #    cd firmware
-    #    sleep 3
-    #    timeout 10s unbuffer python3 -m esp_idf_monitor > monitor_log.txt 2>&1 || true
+    - name: Monitor ${{ matrix.target }} serial output
+      run: |
+        sleep 3
+        PORT=$(grep "Serial port" ${{ matrix.target }}_flash_log.txt | cut -d' ' -f3 | tr -d ':')
+        timeout 10s unbuffer python3 -m esp_idf_monitor --port $PORT > ${{ matrix.target }}_monitor_log.txt 2>&1 || true
     
     - name: Upload ${{ matrix.target }} logs
       uses: actions/upload-artifact@v4
@@ -63,5 +63,5 @@ jobs:
         name: ${{ matrix.target }}-logs
         path: |
           ${{ matrix.target }}_flash_log.txt
-    #       ${{ matrix.target }}_monitor_log.txt
+          ${{ matrix.target }}_monitor_log.txt
 
